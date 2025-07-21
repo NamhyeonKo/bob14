@@ -71,6 +71,8 @@ def main():
             if mbr_signiture == b'\x55\xAA':
                 parse_mbr(f)
             
+            f.close()
+
             # 파티션 없으면 종료
             if not partitions:
                 print("파티션이 없습니다.")

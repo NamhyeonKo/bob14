@@ -60,6 +60,8 @@ def main():
             if gpt_signiture == b'EFI PART':
                 partitions = parse_gpt(f)
             
+            f.close()
+
             # 파티션 없으면 종료
             if not partitions:
                 print("파티션이 없습니다.")
