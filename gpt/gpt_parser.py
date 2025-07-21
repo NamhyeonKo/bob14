@@ -68,7 +68,7 @@ def main():
             # 파티션 값들 출력
             for p in partitions:
                 print(
-                    p['guid'].hex(),
+                    p['guid'].hex().upper(),
                     p['start_sector'],
                     p['total_sectors']
                 )
