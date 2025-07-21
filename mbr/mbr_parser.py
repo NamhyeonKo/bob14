@@ -1,23 +1,21 @@
 # namhyungo's mbr parser
 import struct
 import sys
-import uuid
 
 partitions = []
 SIZE = 16
+SECTOR_SIZE = 512
 
 def parse_ebr(f, base_ebr, offset):
-    f.seek(base_ebr + offset)
-
-    # 처음 mbr 확인
     for i in range(2):
-        f.seek(446 + i * SIZE)
+        current_ebr_byte_pos = (base_ebr + offset) * SECTOR_SIZE
+        f.seek(current_ebr_byte_pos + 446 + i * SIZE)
         entry = f.read(SIZE)
 
         file_type = entry[4]
 
         if file_type == 0x07:
-            start_sector = base_ebr + int.from_bytes(entry[8:12], 'little')
+            start_sector = base_ebr + offset + int.from_bytes(entry[8:12], 'little')
             total_sectors = int.from_bytes(entry[12:], 'little')
             partitions.append({
                     "start_sector": start_sector,
@@ -27,7 +25,6 @@ def parse_ebr(f, base_ebr, offset):
             off = int.from_bytes(entry[8:12], 'little')
             parse_ebr(f, base_ebr, off)
         else:
-            print("ebr에서 0으로 스킵")
             continue
 
 def parse_mbr(f):
@@ -51,7 +48,6 @@ def parse_mbr(f):
             base_ebr = int.from_bytes(entry[8:12], 'little')
             parse_ebr(f, base_ebr, 0)
         else:
-            print("mbr에서 0으로 스킵")
             continue
 
 def main():
@@ -82,10 +78,7 @@ def main():
             
             # 파티션 값들 출력
             for p in partitions:
-                print(
-                    p['start_sector'],
-                    p['total_sectors']
-                )
+                print(p['start_sector'], p['total_sectors'])
 
     # 파일 탐색 오류
     except FileNotFoundError:
