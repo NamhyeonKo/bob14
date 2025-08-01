@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from dotenv import load_dotenv
+import os
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
@@ -7,7 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-app = Flask(__name__, __static_folder='public')
+app = Flask(__name__, static_folder='public')
 
 llm = ChatOpenAI(
     openai_api_key=os.getenv("openai_api_key"),
@@ -31,3 +32,19 @@ prompt = ChatPromptTemplate.from_messages([
 
 chain = prompt | llm | StrOutputParser()
 
+@app.route('/')
+def index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/analyze', methods=['POST'])
+def check_code():
+    data = request.get_json()
+    code = data.get('code', '')
+    if not code:
+        return jsonify({"error": "No code provided"}), 400
+    
+    analysis = chain.invoke({"code": code})
+    return jsonify({"analysis": analysis})
+
+if __name__ == '__main__':
+    app.run(debug=True)
