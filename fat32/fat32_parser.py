@@ -25,11 +25,6 @@ def parse_fat32_vbr(f):
     total_clusters = data_area_total_sectors // vbr_info['spc'] # 정수 나눗셈
     vbr_info['total_clusters'] = total_clusters
 
-    print(f" -> BPS: {vbr_info['bps']}, SPC: {vbr_info['spc']}, Cluster Size: {vbr_info['cluster_size']}")
-    print(f" -> FAT#1 Start LBA: {vbr_info['fat1_start_lba']}")
-    print(f" -> Data Area Start LBA: {vbr_info['data_area_start_lba']}")
-    print(f" -> Total Clusters in Data Area: {total_clusters}")
-
     return vbr_info
 
 def get_cluster_chain(f, start_cluster, vbr_info):
@@ -45,7 +40,6 @@ def get_cluster_chain(f, start_cluster, vbr_info):
         next_cluster_bytes = f.read(4)
         current_cluster = int.from_bytes(next_cluster_bytes, 'little')
 
-    print(f"chain : {chain}")
     return chain
 
 def parse_dir(f, start_cluster, vbr_info):
@@ -85,15 +79,22 @@ def parse_dir(f, start_cluster, vbr_info):
         else:
             full_filename = f"{filename}.{extension}" if extension else filename
             print(f"[FILE] {full_filename} (Size: {file_size} bytes, Cluster: {entry_start_cluster})")
-            # get_cluster_chain(f, entry_start_cluster, vbr_info)
+            get_cluster_chain(f, entry_start_cluster, vbr_info)
 
 
 def main():
-    if len(sys.argv) < 2: # sys.argv 인자 제대로 들어왔는지 확인, 오류 발생 시 사용법 출력
-        print(f"사용법: python {sys.argv[0]} <disk_image.dd>")
+    if len(sys.argv) < 3: # sys.argv 인자 제대로 들어왔는지 확인, 오류 발생 시 사용법 출력
+        print(f"사용법: python {sys.argv[0]} <disk_image.dd> <start_cluster>")
+        print("예시: python fat32_parser.py fat32.dd 2")
         sys.exit(1)
     
-    dd_filepath = sys.argv[1] # 파일 경로 저장 후 해당 파일 읽기
+    dd_filepath = sys.argv[1] # 파일 경로 저장
+    try:
+        start_cluster = int(sys.argv[2]) # 시작 클러스터 번호
+    except ValueError:
+        print("시작 클러스터는 숫자여야 합니다.")
+        sys.exit(1)
+    
     try:
         with open(dd_filepath, 'rb') as f:
             f.seek(510)
@@ -104,8 +105,11 @@ def main():
             if boot_sector_sig != b"\x55\xAA" or fs_type != b"FAT32   ":
                 print("FAT32 disk image가 이상해요")
                 sys.exit(1)
+            
             vbr_info = parse_fat32_vbr(f)
-            parse_dir(f, vbr_info['root_dir_cluster'], vbr_info)
+            cluster_chain = get_cluster_chain(f, start_cluster, vbr_info)
+            
+            print(f"{','.join(map(str, cluster_chain))}")
 
             f.close()
 
