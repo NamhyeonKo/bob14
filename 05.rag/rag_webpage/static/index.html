@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Model</title>
+</head>
+<body>
+    <h1>Document Upload and Q&A</h1>
+    
+    <h2>Upload File</h2>
+    <input type="file" id="fileInput" accept=".pdf,.txt,.docx">
+    <button onclick="uploadFile()">Upload File</button>
+
+    <h2>Uploaded Files</h2>
+    <div id="fileList"></div>
+    <button onclick="loadFileList()">Refresh File List</button>
+
+    <h2>Ask a Question</h2>
+    <input type="text" id="questionInput" placeholder="질문을 입력하세요...">
+    <button onclick="askQuestion()">Ask</button>
+
+    <h3>Answer</h3>
+    <div id="answer"></div>
+
+    <script>
+        // 페이지 로드 시 파일 목록 불러오기
+        window.onload = function() {
+            loadFileList();
+        };
+
+        async function loadFileList() {
+            try {
+                const response = await fetch('/files');
+                const data = await response.json();
+                const fileListElem = document.getElementById('fileList');
+                
+                if (data.files && data.files.length > 0) {
+                    fileListElem.innerHTML = data.files.map(filename => 
+                        `<div>
+                            <span>${filename}</span>
+                            <button onclick="deleteFile('${filename}')">Delete</button>
+                        </div>`
+                    ).join('');
+                } else {
+                    fileListElem.innerHTML = '<p>업로드된 파일이 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error('파일 목록을 불러오는 중 오류:', error);
+                document.getElementById('fileList').innerHTML = '<p>파일 목록을 불러올 수 없습니다.</p>';
+            }
+        }
+
+        async function deleteFile(filename) {
+            if (!confirm(`정말로 '${filename}' 파일을 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/delete/${filename}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(data.message);
+                    loadFileList(); // 파일 목록 새로고침
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('파일 삭제 중 오류:', error);
+                alert('파일 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    loadFileList(); // 파일 목록 새로고침
+                    fileInput.value = ''; // 파일 입력 초기화
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                console.error('파일 업로드 중 오류:', error);
+                alert('파일 업로드 중 오류가 발생했습니다.');
+            }
+        }
+
+        async function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('질문을 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const result = await response.json();
+                document.getElementById('answer').innerHTML = (result.answer || result.error).replace(/\n/g, '<br>');
+            } catch (error) {
+                console.error('질문 처리 중 오류:', error);
+                document.getElementById('answer').innerHTML = '질문 처리 중 오류가 발생했습니다.';
+            }
+        }
+    </script>
+</body>
+</html>
