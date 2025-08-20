@@ -1,0 +1,217 @@
+=== MCP 디버그 로그 ===
+[proxy] 서버 시작 : 07.mcp/hello_serverdebug.py
+[client->server] {
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "mcp",
+      "version": "0.1.0"
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 0
+}
+[server stderr] [DEBUG] HelloWorldDebug server starting
+[server->client] {
+  "jsonrpc": "2.0",
+  "id": 0,
+  "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "experimental": {},
+      "prompts": {
+        "listChanged": false
+      },
+      "resources": {
+        "subscribe": false,
+        "listChanged": false
+      },
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "HelloWorldDebug",
+      "version": "1.13.0"
+    }
+  }
+}
+[client->server] {
+  "method": "notifications/initialized",
+  "jsonrpc": "2.0"
+}
+[client->server] {
+  "method": "tools/list",
+  "jsonrpc": "2.0",
+  "id": 1
+}
+[server stderr] [08/20/25 20:16:29] INFO     Processing request of type            server.py:624
+[server->client] {
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "hello",
+        "description": "Return greeting message",
+        "inputSchema": {
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "title": "helloArguments",
+          "type": "object"
+        },
+        "outputSchema": {
+          "properties": {
+            "result": {
+              "title": "Result",
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "title": "helloOutput",
+          "type": "object"
+        }
+      },
+      {
+        "name": "add_numbers",
+        "description": "Add two numbers",
+        "inputSchema": {
+          "properties": {
+            "a": {
+              "title": "A",
+              "type": "integer"
+            },
+            "b": {
+              "title": "B",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "title": "add_numbersArguments",
+          "type": "object"
+        },
+        "outputSchema": {
+          "properties": {
+            "result": {
+              "title": "Result",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "title": "add_numbersOutput",
+          "type": "object"
+        }
+      },
+      {
+        "name": "get_server_info",
+        "description": "Return server information",
+        "inputSchema": {
+          "properties": {},
+          "title": "get_server_infoArguments",
+          "type": "object"
+        }
+      }
+    ]
+  }
+}
+[server stderr] ListToolsRequest
+[client->server] {
+  "method": "tools/call",
+  "params": {
+    "name": "hello",
+    "arguments": {
+      "name": "Alice"
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}
+[server stderr] INFO     Processing request of type            server.py:624
+[server->client] {
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Hello, Alice! (from debug server)"
+      }
+    ],
+    "structuredContent": {
+      "result": "Hello, Alice! (from debug server)"
+    },
+    "isError": false
+  }
+}
+[client->server] {
+  "method": "tools/call",
+  "params": {
+    "name": "add_numbers",
+    "arguments": {
+      "a": 10,
+      "b": 20
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 3
+}
+[server stderr] CallToolRequest
+[server stderr] [DEBUG] hello function called, name=Alice
+[server->client] {
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "30"
+      }
+    ],
+    "structuredContent": {
+      "result": 30
+    },
+    "isError": false
+  }
+}
+[client->server] {
+  "method": "tools/call",
+  "params": {
+    "name": "get_server_info",
+    "arguments": {}
+  },
+  "jsonrpc": "2.0",
+  "id": 4
+}
+[server stderr] [DEBUG] hello function result: Hello, Alice! (from debug server)
+[server stderr] INFO     Processing request of type            server.py:624
+[server->client] {
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"server_name\": \"HelloWorldDebug\",\n  \"version\": \"1.0.0\",\n  \"tools\": [\n    \"hello\",\n    \"add_numbers\",\n    \"get_server_info\"\n  ]\n}"
+      }
+    ],
+    "isError": false
+  }
+}
+[proxy] 서버 종료
+[server stderr] CallToolRequest
