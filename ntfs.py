@@ -34,6 +34,13 @@ class NTFS:
         # 총 클러스터 개수 계산
         vbr_info['total_clusters'] = vbr_info['total_sectors'] // vbr_info['spc']
 
+        # 디버깅용 출력 (필요시 주석 해제)
+        # print(f"BPS: {vbr_info['bps']}, SPC: {vbr_info['spc']}")
+        # print(f"Total Sectors: {vbr_info['total_sectors']}")
+        # print(f"MFT Cluster: {vbr_info['mft_cluster']}")
+        # print(f"MFT Record Size: {vbr_info['mft_record_size']}")
+        # print(f"Total Volume Clusters: {vbr_info['total_clusters']}")
+
         return vbr_info
     
     def parse_data_runs(data_runs_data):
@@ -50,7 +57,7 @@ class NTFS:
             length_bytes = header & 0x0F
             offset_bytes = (header & 0xF0) >> 4
 
-            if length_bytes == 0 or offset_bytes == 0:
+            if length_bytes == 0:
                 break
                 
             offset += 1
@@ -88,7 +95,6 @@ class NTFS:
         return runs
     
     def parse_mft_record(f, cluster_number, vbr_info):
-        """MFT 레코드 파싱"""
         # MFT 레코드의 실제 위치 계산
         mft_offset = cluster_number * vbr_info['cluster_size']
         f.seek(mft_offset)
@@ -123,7 +129,7 @@ class NTFS:
                 
             non_resident = record[attr_offset+8] & 0x01
             
-            if attr_type == 0x80:  # $DATA 속성
+            if attr_type == 0x80:  # DATA 속성
                 if non_resident:
                     # 데이터 런 오프셋 확인
                     if attr_offset + 34 <= len(record):
@@ -166,11 +172,20 @@ def main():
             attributes = NTFS.parse_mft_record(f, mft_cluster, vbr_info)
             
             if attributes:
-                print(f"{vbr_info['total_clusters']}")
+                # MFT 0번 레코드의 총 클러스터 사용량 계산
+                total_mft_clusters = 0
+                cluster_runs = []
+                
                 for attr_type, runs in attributes:
                     if attr_type == 'DATA':
                         for start_cluster, length in runs:
-                            print(f"{start_cluster} {length}")
+                            total_mft_clusters += length
+                            cluster_runs.append((start_cluster, length))
+                
+                # 결과 출력
+                print(f"{total_mft_clusters}")
+                for start_cluster, length in cluster_runs:
+                    print(f"{start_cluster} {length}")
             else:
                 print("MFT 0번 레코드를 분석할 수 없습니다.")
 
